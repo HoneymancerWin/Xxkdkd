@@ -214,3 +214,10 @@ def test_excellent_field_without_description():
     assert analyze("iPhone 13", Details(condition="Хорошее", seller_reviews=10), s).reject
     # поле не прочиталось — не теряем объявление
     assert analyze("iPhone 13", Details(condition="", seller_reviews=10), s).reject is None
+
+
+def test_new_allowed_by_default():
+    s = {"condition_grade": "excellent", "min_battery": 85}
+    d = Details(description="Подарили, не пригодился, не распакован", condition="Новое", seller_reviews=5)
+    a = analyze("iPhone 13", d, s)
+    assert a.reject is None and a.grade == "new" and "подарок" in a.green
