@@ -14,9 +14,8 @@ import yaml
 CONFIG = "config.yaml"
 
 
-def normalize(raw: str) -> str:
+def normalize(raw: str, scheme: str = "http") -> str:
     raw = raw.strip()
-    scheme = "http"
     m = re.match(r"^(https?|socks5h?|socks4)://(.+)$", raw, re.I)
     if m:
         scheme, raw = m.group(1).lower(), m.group(2)
@@ -34,6 +33,31 @@ def hide(url: str) -> str:
     return re.sub(r"//([^:@/]+):([^@/]+)@", r"//\1:***@", url)
 
 
+def explain(e: Exception, proxy: str) -> str:
+    text = str(e)
+    pwd = re.search(r"//[^:@/]+:([^@/]+)@", proxy or "")
+    if pwd:
+        text = text.replace(pwd.group(1), "***")
+    if "407" in text:
+        return "неверный логин или пароль (407)"
+    if "timed out" in text.lower() or "timeout" in e.__class__.__name__.lower():
+        return "прокси не отвечает по времени (не тот порт или прокси ещё не активирован)"
+    if "refused" in text.lower():
+        return "порт закрыт (не тот порт или тип прокси)"
+    if "SOCKS" in text or "socks" in text:
+        return "ошибка SOCKS: " + text[-120:]
+    return f"{e.__class__.__name__}: {text[-160:]}"
+
+
+def reachable(proxy: str) -> str | None:
+    """None — прокси работает, иначе текст ошибки."""
+    try:
+        requests.get("http://ip-api.com/json/", proxies={"http": proxy, "https": proxy}, timeout=15)
+        return None
+    except Exception as e:
+        return explain(e, proxy)
+
+
 def check(proxy: str | None) -> bool:
     proxies = {"http": proxy, "https": proxy} if proxy else None
     try:
@@ -44,7 +68,7 @@ def check(proxy: str | None) -> bool:
         if info.get("country") != "Russia":
             print("  ⚠️ IP не российский — Авито, скорее всего, не пустит.")
     except Exception as e:
-        print(f"  ❌ Прокси не отвечает: {e.__class__.__name__}. Проверьте адрес, порт, логин и пароль.")
+        print(f"  ❌ Прокси не отвечает: {explain(e, proxy)}")
         return False
     try:
         r = requests.get("https://www.avito.ru/rossiya?q=iphone", proxies=proxies, timeout=30, headers={
@@ -79,10 +103,26 @@ def main() -> None:
         section.pop("proxy", None)
         print(f"Прокси для {'Авито' if target == 'avito' else 'Telegram'} выключен.")
     else:
+        explicit = re.match(r"^(https?|socks5h?|socks4)://", value.strip(), re.I)
         url = normalize(value)
+        if not explicit:  # тип не указан — пробуем HTTP, потом SOCKS5
+            print("Определяю тип прокси…")
+            errors = {}
+            for scheme in ("http", "socks5h"):
+                candidate = normalize(value, scheme)
+                err = reachable(candidate)
+                if err is None:
+                    url = candidate
+                    print(f"  тип: {'HTTP' if scheme == 'http' else 'SOCKS5'} — работает")
+                    break
+                errors[scheme] = err
+            else:
+                print("  ❌ Не подключается ни как HTTP, ни как SOCKS5:")
+                for k, v in errors.items():
+                    print(f"     {'HTTP' if k == 'http' else 'SOCKS5'}: {v}")
         print(f"Прокси: {hide(url)}")
         if target == "avito":
-            print("Проверяю…")
+            print("Проверяю Авито…")
             if not check(url):
                 print("Всё равно сохранил — можно поменять командой ещё раз.")
         section["proxy"] = url
