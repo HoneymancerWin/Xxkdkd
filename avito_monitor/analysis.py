@@ -116,25 +116,35 @@ def parse_battery(text: str) -> int | None:
 
 
 def grade_condition(title: str, d: Details, red: list[str]) -> tuple[str, str, list[str]]:
-    """Реальное состояние товара: по полю «Состояние» и по тексту описания."""
+    """Реальное состояние товара.
+
+    Главный источник — обязательное поле «Состояние» на Авито (Новое / Отличное / Хорошее /
+    Удовлетворительное / Требует ремонта…). Описание только уточняет: если там упомянуты
+    дефекты или износ, «Отличное» понижается.
+    """
     text = f"{title}\n{d.description}".lower().replace("ё", "е")
     cond = d.condition.lower()
     wear = _labels(text, WEAR_FLAGS)
     damage = [f for f in red if f in DAMAGE]
     if damage:
-        return "bad", ", ".join(damage), wear
+        return "bad", "в описании: " + ", ".join(damage), wear
     if any(w in cond for w in _COND_BAD):
         return ("good" if "хорош" in cond else "bad"), f"в объявлении: {d.condition}", wear
     if "нов" in cond and "как" not in cond:
         return "new", "", wear
-    if wear:
-        return "good", ", ".join(wear), wear
     if any(w in cond for w in _COND_EXCELLENT):
+        if wear:
+            return "good", f"указано «{d.condition}», но в описании: " + ", ".join(wear), wear
         return "excellent", f"в объявлении: {d.condition}", wear
+    # Поле пустое (не прочитали) или общее «Б/у» — смотрим описание.
+    if wear:
+        return "good", "в описании: " + ", ".join(wear), wear
     good = _labels(text, EXCELLENT_FLAGS)
     if good:
         return "excellent", "по описанию: " + ", ".join(good), wear
-    return "unknown", "продавец не описал состояние", wear
+    if not cond:
+        return "unknown", "не удалось прочитать поле «Состояние»", wear
+    return "unknown", f"указано только «{d.condition}»", wear
 
 
 def _found(text: str, stem: str) -> bool:
@@ -202,7 +212,8 @@ def analyze(title: str, d: Details, s: dict) -> Analysis:
     if grade == "new" and s.get("allow_new") is False:
         a.reject = "новое (нужно б/у)"
     elif want == "excellent" and grade not in ("excellent", "new") and not (
-            grade == "unknown" and s.get("allow_unknown_condition")):
+            grade == "unknown" and (s.get("allow_unknown_condition") or not d.condition)):
+        # Пустое поле — скорее всего, поменялась вёрстка Авито: не теряем объявление, а помечаем.
         a.reject = f"состояние: {GRADE_RU[grade]}" + (f" ({note})" if note else "")
     elif want == "good" and grade in ("bad",):
         a.reject = f"состояние: {GRADE_RU[grade]} ({note})"

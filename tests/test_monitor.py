@@ -180,7 +180,14 @@ def test_grade_condition():
     assert grade("Разбита задняя крышка") == "bad"
     assert grade("Продаю телефон") == "unknown"
     assert grade("", cond="Новое") == "new"
-    assert grade("", cond="Отличное") == "excellent"
+    assert grade("", cond="Отличное") == "excellent"          # описания нет — верим полю
+    assert grade("", cond="Как новое") == "excellent"
+    assert grade("", cond="Хорошее") == "good"
+    assert grade("Идеальный, без царапин", cond="Хорошее") == "good"   # поле важнее слов
+    assert grade("", cond="Удовлетворительное") == "bad"
+    assert grade("", cond="Требует ремонта") == "bad"
+    assert grade("Есть царапина на экране", cond="Отличное") == "good"  # описание уточняет
+    assert grade("Трещина на крышке", cond="Отличное") == "bad"
 
 
 def test_battery():
@@ -198,3 +205,12 @@ def test_excellent_used_filter():
     for desc, cond in [("Есть царапины, АКБ 90%", "Б/у"), ("Продаю", "Б/у"),
                        ("Идеальное, АКБ 79%", "Б/у"), ("", "Новое")]:
         assert analyze("iPhone 13", Details(description=desc, condition=cond, seller_reviews=10), s).reject
+
+
+def test_excellent_field_without_description():
+    s = {"condition_grade": "excellent", "allow_new": False, "min_battery": 85}
+    no_desc = Details(description="", condition="Отличное", seller_reviews=10)
+    assert analyze("iPhone 13", no_desc, s).reject is None
+    assert analyze("iPhone 13", Details(condition="Хорошее", seller_reviews=10), s).reject
+    # поле не прочиталось — не теряем объявление
+    assert analyze("iPhone 13", Details(condition="", seller_reviews=10), s).reject is None
