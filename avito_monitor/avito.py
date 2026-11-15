@@ -235,6 +235,23 @@ class AvitoClient:
             raise BlockedError(f"Капча/фаервол на {url}")
         return text
 
+    def _diagnose_empty(self, html: str, url: str) -> None:
+        """Пустая выдача: либо правда ничего нет, либо проверка «вы не робот»."""
+        low = html.lower()
+        if any(w in low for w in ("captcha", "не робот", "доступ ограничен", "access denied",
+                                  "подозрительн", "проверка браузера")):
+            self._warmed = False
+            self.session.cookies.clear()
+            raise BlockedError("Авито показал проверку «вы не робот»")
+        try:
+            with open("last_empty_page.html", "w", encoding="utf-8") as f:
+                f.write(html)
+        except OSError:
+            pass
+        m = re.search(r"<title>(.*?)</title>", html, re.S | re.I)
+        log.warning("Пустая выдача: %s (заголовок страницы: «%s», %d байт) — сохранил в last_empty_page.html",
+                    url, (m.group(1).strip()[:80] if m else "нет"), len(html))
+
     def details(self, url: str) -> Details:
         time.sleep(random.uniform(*self.delay))
         return parse_item_page(self.fetch(url))
@@ -244,9 +261,12 @@ class AvitoClient:
         for page in range(1, pages + 1):
             if page > 1:
                 time.sleep(random.uniform(*self.delay))
-            items = parse_search_page(self.fetch(_with_page(url, page)))
+            html = self.fetch(_with_page(url, page))
+            items = parse_search_page(html)
             log.debug("%s стр.%d: %d объявлений", url, page, len(items))
             if not items:
+                if page == 1:
+                    self._diagnose_empty(html, url)
                 break
             for it in items:
                 result.setdefault(it.id, it)

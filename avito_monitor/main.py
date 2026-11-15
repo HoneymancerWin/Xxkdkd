@@ -175,7 +175,12 @@ def monitor(client: AvitoClient, db: Storage, tg: Telegram, st: Settings, wake: 
                 blocked = True
                 break
             except Exception as e:
-                log.error("[%s] ошибка: %s", cat.title, e)
+                msg = str(e)
+                if "Connection refused" in msg:
+                    msg = "соединение отклонено (прокси или сеть не пускают на Авито)"
+                elif "Max retries" in msg or "timed out" in msg:
+                    msg = "нет соединения с Авито"
+                log.error("[%s] ошибка: %s", cat.title, msg[:200])
                 log.debug("подробности", exc_info=True)
             time.sleep(random.uniform(4, 9))
         status = {"ts": time.time(), "blocked": blocked, **total}

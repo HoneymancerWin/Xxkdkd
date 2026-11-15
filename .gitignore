@@ -6,3 +6,4 @@ config.yaml
 run_loop.sh
 avito.pid
 avito.log
+last_empty_page.html

@@ -52,9 +52,9 @@ case "\$1" in
   restart) "\$0" stop >/dev/null; sleep 1; "\$0" start ;;
   status)  if running; then echo "Работает"; tail -n 5 avito.log 2>/dev/null; else echo "Не запущен"; fi ;;
   logs)    tail -n 50 -f avito.log | sed -u \
-             -e 's/ERROR/\x1b[1;31mERROR\x1b[0m/' -e 's/WARNING/\x1b[33mWARNING\x1b[0m/' \
-             -e 's/INFO/\x1b[2mINFO\x1b[0m/' -e 's/отправлено: \([1-9][0-9]*\)/\x1b[1;32mотправлено: \1\x1b[0m/' \
-             -e 's/\(\[[^]]*\]\)/\x1b[36m\1\x1b[0m/' ;;
+             -e 's/ \(\[[^]]*\]\)/ \x1b[36m\1\x1b[0m/' \
+             -e 's/ ERROR / \x1b[1;31mERROR\x1b[0m /' -e 's/ WARNING / \x1b[33mWARNING\x1b[0m /' \
+             -e 's/ INFO / \x1b[2mINFO\x1b[0m /' -e 's/отправлено: \([1-9][0-9]*\)/\x1b[1;32mотправлено: \1\x1b[0m/' ;;
   proxy)   python -m avito_monitor.proxy_cmd avito "\${2:-check}" && [ -n "\$2" ] && [ "\$2" != check ] && "\$0" restart ;;
   tgproxy) python -m avito_monitor.proxy_cmd telegram "\${2:-check}" && [ -n "\$2" ] && [ "\$2" != check ] && "\$0" restart ;;
   theme)   bash termux-theme.sh "\${2:-mocha}" ;;
