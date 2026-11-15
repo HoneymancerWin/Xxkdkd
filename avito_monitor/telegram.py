@@ -7,6 +7,8 @@ import time
 
 import requests
 
+from .analysis import GRADE_RU
+
 log = logging.getLogger(__name__)
 
 
@@ -67,8 +69,18 @@ def format_item(search_name: str, item, market: float | None, reason: str, old_p
         lines.append(f"🕒 {e(item.date)}")
 
     if details:
-        if details.condition:
-            lines.append(f"📦 Состояние: <b>{e(details.condition)}</b>")
+        cond = [e(details.condition)] if details.condition else []
+        if analysis:
+            g = e(GRADE_RU[analysis.grade])
+            if analysis.grade == "excellent":
+                g = f"<b>{g}</b>"
+            if analysis.grade_note and not analysis.grade_note.startswith("в объявлении"):
+                g += f" ({e(analysis.grade_note)})"
+            cond.append(g)
+        if cond:
+            lines.append("📦 Состояние: " + " → ".join(cond))
+        if analysis and analysis.battery is not None:
+            lines.append(f"🔋 АКБ: <b>{analysis.battery}%</b>")
         extra = [f"{k}: {v}" for k, v in details.params.items() if not k.lower().startswith("состояние")][:4]
         if extra:
             lines.append("🔧 " + e(" · ".join(extra)))

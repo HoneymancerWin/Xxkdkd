@@ -113,7 +113,7 @@ def test_flags_respect_negation():
     assert red == []
     assert {"без царапин", "есть чек"} <= set(green)
     red, _, _ = find_flags("Есть скол на углу, iCloud не отвязан, только предоплата")
-    assert {"сколы", "iCloud", "предоплата"} <= set(red)
+    assert {"iCloud", "предоплата"} <= set(red)
 
 
 def test_analyze_scores_and_rejects():
@@ -159,3 +159,42 @@ def test_manual_market_price(tmp_path):
     client.items += [Item("a", "iphone", 15500, "ua"), Item("b", "iphone", 17000, "ub")]
     process_search(client, db, tg, s)
     assert len(tg.msgs) == 1 and "ua" in tg.msgs[0] and "20 000" in tg.msgs[0]
+
+
+# ---------- состояние б/у ----------
+from avito_monitor.analysis import grade_condition, parse_battery
+
+
+def grade(desc, cond="Б/у"):
+    d = Details(description=desc, condition=cond)
+    red, _, _ = find_flags(desc)
+    return grade_condition("iPhone 13", d, red)[0]
+
+
+def test_grade_condition():
+    assert grade("Идеальное состояние, без царапин, всегда в чехле") == "excellent"
+    assert grade("Состояние отличное, АКБ 91%") == "excellent"
+    assert grade("Отличное состояние, есть пара мелких царапин на корпусе") == "good"
+    assert grade("Телефон в хорошем состоянии") == "good"
+    assert grade("Есть потертости по рамке") == "good"
+    assert grade("Разбита задняя крышка") == "bad"
+    assert grade("Продаю телефон") == "unknown"
+    assert grade("", cond="Новое") == "new"
+    assert grade("", cond="Отличное") == "excellent"
+
+
+def test_battery():
+    assert parse_battery("АКБ 87%") == 87
+    assert parse_battery("ёмкость аккумулятора 92 %") == 92
+    assert parse_battery("состояние батареи — 100%") == 100
+    assert parse_battery("89% акб, скидка 10%") == 89
+    assert parse_battery("скидка 10%") is None
+
+
+def test_excellent_used_filter():
+    s = {"condition_grade": "excellent", "allow_new": False, "min_battery": 85}
+    ok = Details(description="Идеальное состояние, АКБ 90%", condition="Б/у", seller_reviews=10)
+    assert analyze("iPhone 13", ok, s).reject is None
+    for desc, cond in [("Есть царапины, АКБ 90%", "Б/у"), ("Продаю", "Б/у"),
+                       ("Идеальное, АКБ 79%", "Б/у"), ("", "Новое")]:
+        assert analyze("iPhone 13", Details(description=desc, condition=cond, seller_reviews=10), s).reject

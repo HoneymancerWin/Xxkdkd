@@ -38,6 +38,11 @@ DEFAULTS = {
     "seller_types": [],          # напр. ["Частное лицо"]
     "reject_red_flags": [],      # отсеивать при этих признаках, напр. ["iCloud", "предоплата"]
     "min_score": None,           # минимальная оценка сделки 0–10
+    "condition_grade": None,     # "excellent" — только отличное/идеальное, "good" — без дефектов
+    "allow_new": True,           # false — отсеивать новые
+    "allow_unknown_condition": False,  # пропускать, если продавец не описал состояние
+    "min_battery": None,         # минимальное здоровье АКБ, %
+    "require_battery": False,    # отсеивать, если процент АКБ не указан
 }
 
 
