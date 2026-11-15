@@ -3,3 +3,6 @@ __pycache__/
 .pytest_cache/
 config.yaml
 *.db
+run_loop.sh
+avito.pid
+avito.log

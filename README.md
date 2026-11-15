@@ -65,17 +65,25 @@ curl -fsSL https://raw.githubusercontent.com/HoneymancerWin/Xxkdkd/ccr-84ad4696-
 | `avito restart` / `stop` / `start` | управление службой |
 | `avito update` | обновить бота |
 
-## Запуск на Android-телефоне (Termux)
+## Запуск на Android-телефоне (Termux) — в фоне
 
-1. Установите **Termux** из F-Droid: https://f-droid.org/packages/com.termux/ (версия из Google Play устарела).
-2. Откройте Termux и вставьте:
+1. Установите из F-Droid **Termux** (https://f-droid.org/packages/com.termux/) и **Termux:Boot** (https://f-droid.org/packages/com.termux.boot/) — для автозапуска после перезагрузки. Версии из Google Play устарели. Termux:Boot откройте один раз.
+2. В Termux выполните:
    ```bash
    pkg install -y git && git clone -b ccr-84ad4696-6q8xkk https://github.com/HoneymancerWin/Xxkdkd.git avito && bash avito/termux.sh
    ```
-3. Мастер спросит токен бота, ссылку на поиск и цены; chat id он определит сам.
-4. Чтобы Android не усыплял бота: Настройки → Приложения → Termux → Батарея → «Без ограничений».
+3. Мастер спросит токен бота, ссылку на поиск и цены; chat id определит сам. Затем бот уйдёт в фон.
+4. Настройки Android → Приложения → Termux → Батарея → «Без ограничений» (на Xiaomi/Huawei ещё включите «Автозапуск»).
 
-Повторный запуск: `bash avito/termux.sh`. Изменить настройки: `cd avito && python -m avito_monitor --setup`.
+Termux можно свернуть — бот работает, пока в шторке висит уведомление Termux. Не нажимайте в нём «Exit».
+
+| Команда | Что делает |
+|---|---|
+| `avito logs` | что делает бот (выход — Ctrl+C, бот продолжит работать) |
+| `avito status` | работает ли |
+| `avito stop` / `start` / `restart` | управление |
+| `avito edit` / `setup` | настройки |
+| `avito update` | обновить бота |
 
 ## Установка
 
