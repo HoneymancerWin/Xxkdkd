@@ -221,3 +221,10 @@ def test_new_allowed_by_default():
     d = Details(description="Подарили, не пригодился, не распакован", condition="Новое", seller_reviews=5)
     a = analyze("iPhone 13", d, s)
     assert a.reject is None and a.grade == "new" and "подарок" in a.green
+
+
+def test_normalize_url():
+    from avito_monitor.avito import normalize_url
+    assert normalize_url("https://m.avito.ru/moskva?q=iphone") == "https://www.avito.ru/moskva?q=iphone"
+    assert normalize_url("avito.ru/moskva?q=x") == "https://www.avito.ru/moskva?q=x"
+    assert normalize_url("Смотри https://m.avito.ru/spb?q=ps5 ") == "https://www.avito.ru/spb?q=ps5"

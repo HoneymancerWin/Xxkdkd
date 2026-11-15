@@ -47,6 +47,18 @@ iPhone 13, 128 ГБ
 
 Также сообщает, если старое объявление **подешевело** до выгодной цены. Уже виденные объявления повторно не присылаются.
 
+## Запуск на Android-телефоне (Termux)
+
+1. Установите **Termux** из F-Droid: https://f-droid.org/packages/com.termux/ (версия из Google Play устарела).
+2. Откройте Termux и вставьте:
+   ```bash
+   pkg install -y git && git clone -b ccr-84ad4696-6q8xkk https://github.com/HoneymancerWin/Xxkdkd.git avito && bash avito/termux.sh
+   ```
+3. Мастер спросит токен бота, ссылку на поиск и цены; chat id он определит сам.
+4. Чтобы Android не усыплял бота: Настройки → Приложения → Termux → Батарея → «Без ограничений».
+
+Повторный запуск: `bash avito/termux.sh`. Изменить настройки: `cd avito && python -m avito_monitor --setup`.
+
 ## Установка
 
 ```bash

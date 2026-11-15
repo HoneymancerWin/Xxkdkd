@@ -146,6 +146,17 @@ def parse_item_page(html: str) -> Details:
     return d
 
 
+def normalize_url(url: str) -> str:
+    """Ссылки с телефона (m.avito.ru, без https) → полная версия сайта."""
+    url = url.strip()
+    m = re.search(r"(?:https?://)?(?:www\.|m\.)?avito\.ru\S*", url)  # ссылку могли вставить с текстом
+    if m:
+        url = m.group(0)
+    if not url.startswith("http"):
+        url = "https://" + url
+    return re.sub(r"^https?://(?:m\.|www\.)?avito\.ru", "https://www.avito.ru", url)
+
+
 def _with_page(url: str, page: int) -> str:
     parts = urlparse(url)
     query = dict(parse_qsl(parts.query))

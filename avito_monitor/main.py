@@ -11,7 +11,7 @@ import time
 import yaml
 
 from .analysis import analyze
-from .avito import AvitoClient, BlockedError, Item
+from .avito import AvitoClient, BlockedError, Item, normalize_url
 from .market import market_price
 from .storage import Storage
 from .telegram import Telegram, fmt_price, format_item
@@ -60,6 +60,7 @@ def load_config(path: str) -> dict:
     base = {**DEFAULTS, **(cfg.get("defaults") or {})}
     cfg["searches"] = [{**base, **s} for s in cfg["searches"]]
     for s in cfg["searches"]:
+        s["url"] = normalize_url(s["url"])
         s.setdefault("name", s["url"])
         s["include"] = [w.lower() for w in s["include"] or []]
         s["exclude"] = [w.lower() for w in s["exclude"] or []]
@@ -183,8 +184,14 @@ def main() -> None:
     ap.add_argument("-c", "--config", default="config.yaml")
     ap.add_argument("--once", action="store_true", help="один проход и выход")
     ap.add_argument("--test-telegram", action="store_true", help="отправить тестовое сообщение")
+    ap.add_argument("--setup", action="store_true", help="пошаговая настройка (токен, поиски)")
     ap.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args()
+    if args.setup or not os.path.exists(args.config):
+        from .setup_wizard import run as setup
+        setup(args.config)
+        if args.setup:
+            return
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
                         format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
     cfg = load_config(args.config)
