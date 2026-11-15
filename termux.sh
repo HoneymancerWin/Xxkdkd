@@ -50,12 +50,16 @@ case "\$1" in
     termux-wake-unlock 2>/dev/null || true ;;
   restart) "\$0" stop >/dev/null; sleep 1; "\$0" start ;;
   status)  if running; then echo "Работает"; tail -n 5 avito.log 2>/dev/null; else echo "Не запущен"; fi ;;
-  logs)    tail -n 50 -f avito.log ;;
+  logs)    tail -n 50 -f avito.log | sed -u \
+             -e 's/ERROR/\x1b[1;31mERROR\x1b[0m/' -e 's/WARNING/\x1b[33mWARNING\x1b[0m/' \
+             -e 's/INFO/\x1b[2mINFO\x1b[0m/' -e 's/отправлено: \([1-9][0-9]*\)/\x1b[1;32mотправлено: \1\x1b[0m/' \
+             -e 's/\(\[[^]]*\]\)/\x1b[36m\1\x1b[0m/' ;;
+  theme)   bash termux-theme.sh "\${2:-mocha}" ;;
   edit)    nano config.yaml && "\$0" restart ;;
   setup)   python -m avito_monitor --setup && "\$0" restart ;;
   test)    python -m avito_monitor --test-telegram ;;
   update)  git pull -q && bash termux.sh ;;
-  *) echo "avito start | stop | restart | status | logs | edit | setup | test | update" ;;
+  *) echo "avito start | stop | restart | status | logs | setup | test | update | theme [mocha|dracula|nord|tokyo|default]" ;;
 esac
 EOF
 chmod +x "$PREFIX/bin/avito"
@@ -69,9 +73,12 @@ $PREFIX/bin/avito start
 EOF
 chmod +x "$HOME/.termux/boot/avito.sh"
 
+[ -f "$HOME/.termux/colors.properties" ] || bash "$DIR/termux-theme.sh" mocha >/dev/null
+
 avito restart
 echo
 echo "Готово! Бот работает в фоне. Termux можно свернуть (но не закрывать через «Exit»)."
 echo "  avito logs   — что делает бот (выход: Ctrl+C, бот продолжит работать)"
 echo "  avito stop   — остановить,  avito start — запустить"
-echo "  avito edit   — настройки,   avito update — обновить"
+echo "  avito theme  — сменить тему, avito update — обновить"
+echo "  Настройки и категории — кнопками в Telegram."

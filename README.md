@@ -44,6 +44,8 @@
 
 **VPN для Termux выключите** — с зарубежных IP Авито не пускает (ошибка 439). Лучше всего работает через мобильный интернет.
 
+Оформление: `avito theme mocha` (по умолчанию), `dracula`, `nord`, `tokyo` или `default` — цветовая тема, приветствие со статусом бота, ряд клавиш Ctrl/стрелки. Шрифт меняется через приложение **Termux:Styling** (F-Droid): долгое нажатие на экран → More → Style.
+
 Команды в Termux: `avito logs` (что делает бот, выход Ctrl+C), `avito status`, `avito stop`/`start`/`restart`, `avito update`, `avito setup` (сменить токен).
 
 ## Установка на сервер (VPS)
