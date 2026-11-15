@@ -149,3 +149,13 @@ def test_flow_filters_by_seller(tmp_path):
     client.items += [Item("good", "iphone", 30000, "ugood"), Item("bad", "iphone", 30000, "ubad")]
     process_search(client, db, tg, s)
     assert len(tg.msgs) == 1 and "ugood" in tg.msgs[0] and "Алексей" in tg.msgs[0]
+
+
+def test_manual_market_price(tmp_path):
+    db, tg, client = Storage(str(tmp_path / "db.sqlite")), FakeTG(), FakeClient()
+    s = {**DEFAULTS, "name": "t", "url": "u", "discount": 20, "market_price": 20000, "details": False}
+    client.items = [Item("0", "iphone", 21000, "u0")]
+    process_search(client, db, tg, s)               # первый запуск
+    client.items += [Item("a", "iphone", 15500, "ua"), Item("b", "iphone", 17000, "ub")]
+    process_search(client, db, tg, s)
+    assert len(tg.msgs) == 1 and "ua" in tg.msgs[0] and "20 000" in tg.msgs[0]

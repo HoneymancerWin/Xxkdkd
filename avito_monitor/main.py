@@ -25,6 +25,7 @@ DEFAULTS = {
     "min_price": None,       # отсекать мусор/«цены за 1 ₽»
     "include": [],           # все слова должны быть в заголовке/описании
     "exclude": [],           # ни одного из этих слов
+    "market_price": None,    # рыночная цена вручную (иначе считается по выдаче)
     "min_samples": 15,       # минимум цен для оценки рынка
     "history_days": 14,      # окно истории цен
     "notify_price_drops": True,
@@ -97,7 +98,10 @@ def process_search(client: AvitoClient, db: Storage, tg: Telegram, s: dict) -> N
         if it.price and (not s["min_price"] or it.price >= s["min_price"]):
             db.record_price(name, it.id, it.price)
     history = db.recent_prices(name, s["history_days"])
-    market = market_price(history) if len(history) >= s["min_samples"] else None
+    if s["market_price"]:
+        market = float(s["market_price"])
+    else:
+        market = market_price(history) if len(history) >= s["min_samples"] else None
 
     first_run = not db.has_any(name)
     sent = 0
