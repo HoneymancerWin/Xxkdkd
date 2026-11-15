@@ -11,7 +11,7 @@ import time
 import yaml
 
 from .analysis import analyze
-from .avito import AvitoClient, BlockedError, Item, normalize_url
+from .avito import AvitoClient, BlockedError, Item, is_item_url, normalize_url
 from .market import market_price
 from .storage import Storage
 from .telegram import Telegram, fmt_price, format_item
@@ -60,6 +60,8 @@ def load_config(path: str) -> dict:
     base = {**DEFAULTS, **(cfg.get("defaults") or {})}
     cfg["searches"] = [{**base, **s} for s in cfg["searches"]]
     for s in cfg["searches"]:
+        if is_item_url(s["url"]):
+            log.warning("[%s] в конфиге ссылка на одно объявление — ищу по его названию", s.get("name", ""))
         s["url"] = normalize_url(s["url"])
         s.setdefault("name", s["url"])
         s["include"] = [w.lower() for w in s["include"] or []]
@@ -160,11 +162,12 @@ def run(cfg: dict, once: bool = False) -> None:
             try:
                 process_search(client, db, tg, s)
             except BlockedError as e:
-                log.warning("Блокировка Авито: %s", e)
+                log.warning("Блокировка Авито: %s. Если включён VPN — выключите его для Termux.", e)
                 blocked = True
                 break
-            except Exception:
-                log.exception("[%s] ошибка", s["name"])
+            except Exception as e:
+                log.error("[%s] ошибка: %s", s["name"], e)
+                log.debug("подробности", exc_info=True)
             time.sleep(random.uniform(4, 9))
         if once:
             return

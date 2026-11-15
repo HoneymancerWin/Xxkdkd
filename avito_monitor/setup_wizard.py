@@ -65,7 +65,12 @@ def run(path: str = "config.yaml") -> None:
     searches = []
     while True:
         from .avito import normalize_url
-        url = normalize_url(ask("Ссылка на поиск Авито"))
+        from .avito import is_item_url
+        raw = ask("Ссылка на поиск Авито")
+        url = normalize_url(raw)
+        if is_item_url(raw):
+            print("  Это ссылка на одно объявление, а нужна на поиск. Сделал поиск по его названию:")
+        print(f"  → {url}")
         name = ask("Как назвать этот поиск", "Поиск " + str(len(searches) + 1))
         s = {"name": name, "url": url}
         mp = ask("Рыночная цена в рублях (Enter — бот посчитает сам)", "")

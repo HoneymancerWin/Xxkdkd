@@ -225,6 +225,9 @@ def test_new_allowed_by_default():
 
 def test_normalize_url():
     from avito_monitor.avito import normalize_url
-    assert normalize_url("https://m.avito.ru/moskva?q=iphone") == "https://www.avito.ru/moskva?q=iphone"
-    assert normalize_url("avito.ru/moskva?q=x") == "https://www.avito.ru/moskva?q=x"
-    assert normalize_url("Смотри https://m.avito.ru/spb?q=ps5 ") == "https://www.avito.ru/spb?q=ps5"
+    assert normalize_url("https://m.avito.ru/moskva?q=iphone") == "https://www.avito.ru/moskva?q=iphone&s=104"
+    assert normalize_url("avito.ru/moskva?q=x&s=1") == "https://www.avito.ru/moskva?q=x&s=1"
+    assert normalize_url("Смотри https://m.avito.ru/spb?q=ps5 ") == "https://www.avito.ru/spb?q=ps5&s=104"
+    item = ("https://www.avito.ru/moskva/telefony/iphone_18_pro_256_gb_esim_8479107008?context=H4sIAA"
+            "#login?authsrc=share_item")
+    assert normalize_url(item) == "https://www.avito.ru/moskva/telefony?q=iphone+18+pro+256+gb+esim&s=104"

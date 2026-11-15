@@ -30,9 +30,21 @@ HEADERS = {
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
         "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
     ),
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "ru-RU,ru;q=0.9,en;q=0.8",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Accept-Encoding": "gzip, deflate",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+    "Sec-Ch-Ua-Mobile": "?0",
+    "Sec-Ch-Ua-Platform": '"Windows"',
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "same-origin",
+    "Sec-Fetch-User": "?1",
 }
+
+# 439 — собственный код Авито «слишком много запросов / похоже на бота».
+BLOCK_CODES = {403, 429, 439}
 
 
 class BlockedError(RuntimeError):
@@ -154,7 +166,24 @@ def normalize_url(url: str) -> str:
         url = m.group(0)
     if not url.startswith("http"):
         url = "https://" + url
-    return re.sub(r"^https?://(?:m\.|www\.)?avito\.ru", "https://www.avito.ru", url)
+    url = re.sub(r"^https?://(?:m\.|www\.)?avito\.ru", "https://www.avito.ru", url)
+    parts = urlparse(url)
+    query = dict(parse_qsl(parts.query))
+    query.pop("context", None)
+    path = parts.path.rstrip("/")
+    segs = [p for p in path.split("/") if p]
+    # Ссылка на одно объявление (/город/категория/название_123456789) → поиск по названию.
+    m = re.fullmatch(r"(.+)_(\d{7,})", segs[-1]) if len(segs) >= 3 else None
+    if m:
+        path = "/" + "/".join(segs[:-1])
+        query = {"q": m.group(1).replace("_", " ")}
+    query.setdefault("s", "104")  # сортировка по дате — новые сверху
+    return urlunparse(parts._replace(path=path, query=urlencode(query), fragment=""))
+
+
+def is_item_url(url: str) -> bool:
+    segs = [p for p in urlparse(url.split("#")[0]).path.split("/") if p]
+    return len(segs) >= 3 and re.fullmatch(r".+_\d{7,}", segs[-1]) is not None
 
 
 def _with_page(url: str, page: int) -> str:
@@ -175,12 +204,32 @@ class AvitoClient:
             self.session.proxies = {"http": proxy, "https": proxy}
         self.timeout = timeout
         self.delay = delay
+        self._warmed = False
+        self._referer = BASE_URL + "/"
+
+    def _warm_up(self) -> None:
+        """Как живой человек: сначала главная страница (получаем cookies), потом поиск."""
+        if self._warmed:
+            return
+        self._warmed = True
+        try:
+            self.session.get(BASE_URL + "/", timeout=self.timeout,
+                             headers={"Sec-Fetch-Site": "none"}, **_IMPERSONATE)
+            time.sleep(random.uniform(2, 4))
+        except Exception as e:  # не критично
+            log.debug("warm-up: %s", e)
 
     def fetch(self, url: str) -> str:
-        resp = self.session.get(url, timeout=self.timeout, **_IMPERSONATE)
-        if resp.status_code in (403, 429):
-            raise BlockedError(f"HTTP {resp.status_code} на {url}")
-        resp.raise_for_status()
+        self._warm_up()
+        resp = self.session.get(url, timeout=self.timeout, headers={"Referer": self._referer},
+                                **_IMPERSONATE)
+        self._referer = url
+        if resp.status_code in BLOCK_CODES:
+            self._warmed = False  # после паузы начнём «сессию» заново
+            self.session.cookies.clear()
+            raise BlockedError(f"Авито ограничил доступ (HTTP {resp.status_code})")
+        if resp.status_code >= 400:
+            raise RuntimeError(f"HTTP {resp.status_code} на {url}")
         text = resp.text
         if "firewall" in text[:5000].lower() and 'data-marker="item' not in text:
             raise BlockedError(f"Капча/фаервол на {url}")
