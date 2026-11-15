@@ -18,25 +18,31 @@ class Telegram:
         self.chat_ids = chat_ids
         self.proxies = {"http": proxy, "https": proxy} if proxy else None
 
-    def send(self, text: str) -> None:
-        for chat_id in self.chat_ids:
-            for attempt in range(3):
-                try:
-                    r = requests.post(
-                        f"{self.api}/sendMessage",
-                        json={"chat_id": chat_id, "text": text, "parse_mode": "HTML",
-                              "disable_web_page_preview": False},
-                        timeout=20,
-                        proxies=self.proxies,
-                    )
-                    if r.status_code == 429:
-                        time.sleep(r.json().get("parameters", {}).get("retry_after", 5))
-                        continue
-                    r.raise_for_status()
-                    break
-                except requests.RequestException as e:
-                    log.warning("Telegram: ошибка отправки (%s), попытка %d", e, attempt + 1)
-                    time.sleep(3)
+    def call(self, method: str, http_timeout: int = 20, **params):
+        for attempt in range(3):
+            try:
+                r = requests.post(f"{self.api}/{method}", json=params, timeout=http_timeout, proxies=self.proxies)
+                data = r.json()
+                if r.status_code == 429:
+                    time.sleep(data.get("parameters", {}).get("retry_after", 5))
+                    continue
+                if not data.get("ok"):
+                    # «message is not modified» и т.п. — не ошибка для нас
+                    log.debug("Telegram %s: %s", method, data.get("description"))
+                    return None
+                return data["result"]
+            except (requests.RequestException, ValueError) as e:
+                log.warning("Telegram: ошибка %s (%s), попытка %d", method, e, attempt + 1)
+                time.sleep(3)
+        return None
+
+    def send(self, text: str, markup: dict | None = None, chat_id=None, preview: bool = False) -> None:
+        for cid in [chat_id] if chat_id else self.chat_ids:
+            params = {"chat_id": cid, "text": text, "parse_mode": "HTML",
+                      "disable_web_page_preview": not preview}
+            if markup:
+                params["reply_markup"] = markup
+            self.call("sendMessage", **params)
 
 
 def fmt_price(p: float | int | None) -> str:

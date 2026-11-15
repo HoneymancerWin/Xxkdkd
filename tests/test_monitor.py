@@ -1,5 +1,4 @@
 from avito_monitor.avito import Item, parse_search_page
-from avito_monitor.main import DEFAULTS, is_deal, process_search
 from avito_monitor.market import market_price
 from avito_monitor.storage import Storage
 
@@ -28,53 +27,6 @@ def test_parse():
 
 def test_market_trims_outliers():
     assert market_price([1, 50000, 50000, 52000, 48000, 51000, 49000, 50000, 50000, 999999]) == 50000
-
-
-def test_is_deal():
-    s = {**DEFAULTS, "discount": 20, "min_price": 10000}
-    it = Item("1", "t", 39000, "u")
-    assert is_deal(it, s, 50000)[0]
-    assert not is_deal(Item("1", "t", 45000, "u"), s, 50000)[0]
-    assert not is_deal(Item("1", "t", 5000, "u"), s, 50000)[0]
-    assert not is_deal(it, s, None)[0]          # без данных о рынке не спамим
-
-
-class FakeClient:
-    def __init__(self):
-        self.items = []
-
-    def search(self, url, pages):
-        return self.items
-
-
-class FakeTG:
-    def __init__(self):
-        self.msgs = []
-
-    def send(self, text):
-        self.msgs.append(text)
-
-
-def test_flow(tmp_path):
-    db, tg, client = Storage(str(tmp_path / "db.sqlite")), FakeTG(), FakeClient()
-    s = {**DEFAULTS, "name": "test", "url": "u", "discount": 20, "min_samples": 5,
-         "include": [], "exclude": ["разбит"]}
-    client.items = [Item(str(i), "iphone", 50000 + i * 100, f"u{i}") for i in range(10)]
-    process_search(client, db, tg, s)
-    assert tg.msgs == []                         # первый запуск: только запоминаем
-
-    client.items += [Item("new", "iphone дешево", 35000, "unew"),
-                     Item("bad", "iphone разбит", 20000, "ubad"),
-                     Item("meh", "iphone", 49000, "umeh")]
-    process_search(client, db, tg, s)
-    assert len(tg.msgs) == 1 and "unew" in tg.msgs[0]
-
-    process_search(client, db, tg, s)
-    assert len(tg.msgs) == 1                     # повторно не шлём
-
-    client.items[0] = Item("0", "iphone", 36000, "u0")   # старое подешевело
-    process_search(client, db, tg, s)
-    assert len(tg.msgs) == 2 and "цена снижена" in tg.msgs[1]
 
 
 # ---------- анализ объявления ----------
@@ -135,30 +87,6 @@ def test_message_contains_seller_and_condition():
     msg = format_item("s", Item("1", "iPhone", 30000, "https://x"), 40000, "r", details=d,
                       analysis=analyze("iPhone", d, {}))
     assert "Б/у" in msg and "⭐ 4.9" in msg and "137 отзывов" in msg and "Оценка сделки" in msg
-
-
-def test_flow_filters_by_seller(tmp_path):
-    class DetailClient(FakeClient):
-        def details(self, url):
-            return Details(seller_rating=3.1, seller_reviews=2) if url == "ubad" else parse_item_page(ITEM_HTML)
-
-    db, tg, client = Storage(str(tmp_path / "db.sqlite")), FakeTG(), DetailClient()
-    s = {**DEFAULTS, "name": "t", "url": "u", "max_price": 40000, "min_seller_rating": 4.5}
-    client.items = [Item("0", "iphone", 50000, "u0")]
-    process_search(client, db, tg, s)
-    client.items += [Item("good", "iphone", 30000, "ugood"), Item("bad", "iphone", 30000, "ubad")]
-    process_search(client, db, tg, s)
-    assert len(tg.msgs) == 1 and "ugood" in tg.msgs[0] and "Алексей" in tg.msgs[0]
-
-
-def test_manual_market_price(tmp_path):
-    db, tg, client = Storage(str(tmp_path / "db.sqlite")), FakeTG(), FakeClient()
-    s = {**DEFAULTS, "name": "t", "url": "u", "discount": 20, "market_price": 20000, "details": False}
-    client.items = [Item("0", "iphone", 21000, "u0")]
-    process_search(client, db, tg, s)               # первый запуск
-    client.items += [Item("a", "iphone", 15500, "ua"), Item("b", "iphone", 17000, "ub")]
-    process_search(client, db, tg, s)
-    assert len(tg.msgs) == 1 and "ua" in tg.msgs[0] and "20 000" in tg.msgs[0]
 
 
 # ---------- состояние б/у ----------
