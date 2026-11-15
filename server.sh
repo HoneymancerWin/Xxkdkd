@@ -43,8 +43,10 @@ case "$1" in
   setup)   cd $DIR && .venv/bin/python -m avito_monitor --setup && $SUDO systemctl restart avito ;;
   edit)    ${EDITOR:-nano} $DIR/config.yaml && $SUDO systemctl restart avito ;;
   test)    cd $DIR && .venv/bin/python -m avito_monitor --test-telegram ;;
+  proxy)   cd $DIR && .venv/bin/python -m avito_monitor.proxy_cmd avito "${2:-check}" && [ -n "$2" ] && [ "$2" != check ] && $SUDO systemctl restart avito ;;
+  tgproxy) cd $DIR && .venv/bin/python -m avito_monitor.proxy_cmd telegram "${2:-check}" && [ -n "$2" ] && [ "$2" != check ] && $SUDO systemctl restart avito ;;
   update)  bash $DIR/server.sh ;;
-  *) echo "avito logs | status | restart | stop | start | setup | edit | test | update" ;;
+  *) echo "avito logs | status | restart | stop | start | setup | edit | test | update | proxy <прокси|off> | tgproxy <прокси|off>" ;;
 esac
 EOF
 $SUDO chmod +x /usr/local/bin/avito

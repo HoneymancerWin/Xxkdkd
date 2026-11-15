@@ -54,25 +54,14 @@ case "\$1" in
              -e 's/ERROR/\x1b[1;31mERROR\x1b[0m/' -e 's/WARNING/\x1b[33mWARNING\x1b[0m/' \
              -e 's/INFO/\x1b[2mINFO\x1b[0m/' -e 's/отправлено: \([1-9][0-9]*\)/\x1b[1;32mотправлено: \1\x1b[0m/' \
              -e 's/\(\[[^]]*\]\)/\x1b[36m\1\x1b[0m/' ;;
-  tgproxy) python - "\$2" <<'PY'
-import sys, yaml
-cfg = yaml.safe_load(open("config.yaml", encoding="utf-8"))
-url = sys.argv[1] if len(sys.argv) > 1 else ""
-if url and url != "off":
-    cfg["telegram"]["proxy"] = url
-    print("Telegram теперь ходит через", url)
-else:
-    cfg["telegram"].pop("proxy", None)
-    print("Прокси для Telegram выключен")
-yaml.safe_dump(cfg, open("config.yaml", "w", encoding="utf-8"), allow_unicode=True, sort_keys=False)
-PY
-           "\$0" restart ;;
+  proxy)   python -m avito_monitor.proxy_cmd avito "\${2:-check}" && [ -n "\$2" ] && [ "\$2" != check ] && "\$0" restart ;;
+  tgproxy) python -m avito_monitor.proxy_cmd telegram "\${2:-check}" && [ -n "\$2" ] && [ "\$2" != check ] && "\$0" restart ;;
   theme)   bash termux-theme.sh "\${2:-mocha}" ;;
   edit)    nano config.yaml && "\$0" restart ;;
   setup)   python -m avito_monitor --setup && "\$0" restart ;;
   test)    python -m avito_monitor --test-telegram ;;
   update)  git pull -q && bash termux.sh ;;
-  *) echo "avito start | stop | restart | status | logs | setup | test | update | tgproxy <адрес|off> | theme [mocha|dracula|nord|tokyo|default]" ;;
+  *) echo "avito start | stop | restart | status | logs | setup | test | update | proxy <прокси|off> | tgproxy <прокси|off> | theme [mocha|dracula|nord|tokyo|default]" ;;
 esac
 EOF
 chmod +x "$PREFIX/bin/avito"
