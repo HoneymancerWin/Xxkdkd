@@ -70,17 +70,37 @@ def check(proxy: str | None) -> bool:
     except Exception as e:
         print(f"  ❌ Прокси не отвечает: {explain(e, proxy)}")
         return False
+    # 1) работает ли HTTPS вообще
+    for site in ("https://ya.ru", "https://www.google.com"):
+        try:
+            requests.get(site, proxies=proxies, timeout=20)
+            print(f"  ✅ HTTPS через прокси работает ({site[8:]})")
+            break
+        except Exception as e:
+            print(f"  ⚠️ {site[8:]}: {explain(e, proxy)}")
+    else:
+        print("  ❌ Через прокси не открываются HTTPS-сайты. Это ограничение прокси — напишите продавцу.")
+        return False
+    # 2) пускает ли продавец прокси на Авито (обычный http, без шифрования)
     try:
-        r = requests.get("https://www.avito.ru/rossiya?q=iphone", proxies=proxies, timeout=30, headers={
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                          "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            "Accept-Language": "ru-RU,ru;q=0.9"})
-        if r.status_code == 200 and 'data-marker="item' in r.text:
-            print("  ✅ Авито открывается, объявления видны.")
-            return True
-        print(f"  ❌ Авито ответил кодом {r.status_code} — этот IP он не пускает. Нужен другой прокси.")
+        requests.get("http://www.avito.ru/", proxies=proxies, timeout=20, allow_redirects=False)
     except Exception as e:
-        print(f"  ❌ Не удалось открыть Авито: {e.__class__.__name__}")
+        print(f"  ❌ Прокси не пускает на avito.ru: {explain(e, proxy)}")
+        print("     Похоже, продавец блокирует Авито на этом прокси. Попросите замену «под Авито».")
+        return False
+    # 3) так же, как ходит сам бот
+    from .avito import AvitoClient, BlockedError, parse_search_page
+    client = AvitoClient(proxy=proxy, delay=(1, 2))
+    try:
+        items = parse_search_page(client.fetch("https://www.avito.ru/rossiya?q=iphone&s=104"))
+        if items:
+            print(f"  ✅ Авито открывается, объявлений на странице: {len(items)}")
+            return True
+        print("  ⚠️ Авито открылся, но объявлений не видно — пришлите скриншот разработчику.")
+    except BlockedError as e:
+        print(f"  ❌ {e} — этот IP Авито не пускает. Нужен другой прокси (лучше мобильный).")
+    except Exception as e:
+        print(f"  ❌ Не удалось открыть Авито: {explain(e, proxy)}")
     return False
 
 
