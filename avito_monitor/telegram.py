@@ -41,9 +41,19 @@ def fmt_price(p: float | int | None) -> str:
     return "—" if p is None else f"{int(p):,}".replace(",", " ") + " ₽"
 
 
-def format_item(search_name: str, item, market: float | None, reason: str, old_price: int | None = None) -> str:
+def _plural_reviews(n: int) -> str:
+    if n % 10 == 1 and n % 100 != 11:
+        return f"{n} отзыв"
+    if 2 <= n % 10 <= 4 and not 12 <= n % 100 <= 14:
+        return f"{n} отзыва"
+    return f"{n} отзывов"
+
+
+def format_item(search_name: str, item, market: float | None, reason: str, old_price: int | None = None,
+                details=None, analysis=None) -> str:
     e = html.escape
-    lines = [f"🔥 <b>{e(search_name)}</b>", f'<a href="{e(item.url)}">{e(item.title)}</a>']
+    head = "🔥" if not analysis or analysis.score >= 7 else "👀" if analysis.score >= 4 else "⚠️"
+    lines = [f"{head} <b>{e(search_name)}</b>", f'<a href="{e(item.url)}">{e(item.title)}</a>']
     price_line = f"💰 <b>{fmt_price(item.price)}</b>"
     if old_price:
         price_line += f" (было {fmt_price(old_price)})"
@@ -55,5 +65,31 @@ def format_item(search_name: str, item, market: float | None, reason: str, old_p
         lines.append(f"📍 {e(item.location)}")
     if item.date:
         lines.append(f"🕒 {e(item.date)}")
+
+    if details:
+        if details.condition:
+            lines.append(f"📦 Состояние: <b>{e(details.condition)}</b>")
+        extra = [f"{k}: {v}" for k, v in details.params.items() if not k.lower().startswith("состояние")][:4]
+        if extra:
+            lines.append("🔧 " + e(" · ".join(extra)))
+        seller = [details.seller_name or "Продавец"]
+        if details.seller_rating is not None:
+            seller.append(f"⭐ {details.seller_rating:.1f}")
+        if details.seller_reviews is not None:
+            seller.append(_plural_reviews(details.seller_reviews))
+        if details.seller_type:
+            seller.append(details.seller_type)
+        if details.seller_since:
+            seller.append(f"с {details.seller_since}")
+        lines.append("👤 " + e(" · ".join(seller)))
+    if analysis:
+        lines.append(f"🧮 Оценка сделки: <b>{analysis.score:g}/10</b>")
+        if analysis.red:
+            lines.append("❗ " + e(", ".join(analysis.red)))
+        if analysis.green:
+            lines.append("✅ " + e(", ".join(analysis.green)))
+    if details and details.description:
+        desc = " ".join(details.description.split())
+        lines.append(f"📝 {e(desc[:300])}{'…' if len(desc) > 300 else ''}")
     lines.append(f"<i>{e(reason)}</i>")
     return "\n".join(lines)

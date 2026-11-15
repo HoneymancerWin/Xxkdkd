@@ -10,6 +10,7 @@ import time
 
 import yaml
 
+from .analysis import analyze
 from .avito import AvitoClient, BlockedError, Item
 from .market import market_price
 from .storage import Storage
@@ -28,6 +29,14 @@ DEFAULTS = {
     "history_days": 14,      # окно истории цен
     "notify_price_drops": True,
     "notify_on_first_run": False,
+    # --- анализ страницы объявления ---
+    "details": True,             # открывать объявление: описание, состояние, продавец
+    "conditions": [],            # допустимые состояния, напр. ["Новое", "Б/у"]; пусто = любые
+    "min_seller_rating": None,   # напр. 4.5
+    "min_seller_reviews": None,  # напр. 3
+    "seller_types": [],          # напр. ["Частное лицо"]
+    "reject_red_flags": [],      # отсеивать при этих признаках, напр. ["iCloud", "предоплата"]
+    "min_score": None,           # минимальная оценка сделки 0–10
 }
 
 
@@ -98,10 +107,28 @@ def process_search(client: AvitoClient, db: Storage, tg: Telegram, s: dict) -> N
                    and it.price < old_price)
         if (not seen or dropped) and not (first_run and not s["notify_on_first_run"]):
             ok, reason = is_deal(it, s, market)
+            details = analysis = None
+            if ok and s["details"]:
+                try:
+                    details = client.details(it.url)
+                except BlockedError:
+                    raise
+                except Exception as e:
+                    log.warning("[%s] не удалось открыть %s: %s", name, it.url, e)
+                if details:
+                    it.description = details.description
+                    analysis = analyze(it.title, details, s)
+                    if not matches_words(it, s):
+                        ok, why = False, "стоп-слово в описании"
+                    elif analysis.reject:
+                        ok, why = False, analysis.reject
+                    if not ok:
+                        log.info("[%s] отсеяно %s: %s", name, it.url, why)
             if ok:
                 if dropped:
                     reason = "📉 цена снижена · " + reason
-                tg.send(format_item(name, it, market, reason, old_price if dropped else None))
+                tg.send(format_item(name, it, market, reason, old_price if dropped else None,
+                                    details, analysis))
                 sent += 1
         db.mark_seen(name, it.id, it.price)
     db.commit()

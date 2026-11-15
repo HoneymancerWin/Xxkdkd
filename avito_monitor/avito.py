@@ -10,6 +10,8 @@ from urllib.parse import parse_qsl, urlencode, urljoin, urlparse, urlunparse
 
 from bs4 import BeautifulSoup
 
+from .analysis import Details
+
 log = logging.getLogger(__name__)
 
 BASE_URL = "https://www.avito.ru"
@@ -91,6 +93,59 @@ def parse_search_page(html: str) -> list[Item]:
     return items
 
 
+def _parse_rating(text: str) -> float | None:
+    m = re.search(r"\b([0-5][,.]\d)\b", text)
+    return float(m.group(1).replace(",", ".")) if m else None
+
+
+def _parse_reviews(text: str) -> int | None:
+    m = re.search(r"(\d[\d\s ]*)\s*отзыв", text)
+    return int(re.sub(r"\D", "", m.group(1))) if m else None
+
+
+def parse_item_page(html: str) -> Details:
+    soup = BeautifulSoup(html, "html.parser")
+    d = Details()
+
+    def txt(*selectors: str) -> str:
+        for sel in selectors:
+            el = soup.select_one(sel)
+            if el:
+                return el.get_text("\n" if "description" in sel else " ", strip=True)
+        return ""
+
+    d.description = txt('[data-marker="item-view/item-description"]', '[itemprop="description"]',
+                        '[class*="item-description"]')
+
+    params_root = soup.select_one('[data-marker="item-view/item-params"]') or soup.select_one("#bx_item-params")
+    for li in params_root.select("li") if params_root else []:
+        line = li.get_text(" ", strip=True)
+        if ":" in line:
+            k, v = line.split(":", 1)
+            d.params[k.strip()] = v.strip()
+    d.condition = next((v for k, v in d.params.items() if k.lower().startswith("состояние")), "")
+
+    seller = (soup.select_one('[data-marker="seller-info"]') or soup.select_one('[data-marker*="seller-info"]')
+              or soup.select_one('[class*="seller-info"]'))
+    seller_text = seller.get_text(" ", strip=True) if seller else ""
+    d.seller_name = txt('[data-marker="seller-info/name"]', '[data-marker="seller-link/link"]')
+    d.seller_type = txt('[data-marker="seller-info/label"]')
+    if not d.seller_type:
+        for t in ("Частное лицо", "Компания", "Магазин", "Реквизиты проверены"):
+            if t in seller_text:
+                d.seller_type = t
+                break
+    score_text = txt('[data-marker="seller-info/score"]', '[data-marker="seller-rating/score"]')
+    d.seller_rating = _parse_rating(score_text or seller_text)
+    reviews_text = txt('[data-marker="rating-caption/rating"]', '[data-marker="seller-info/summary"]')
+    d.seller_reviews = _parse_reviews(reviews_text or seller_text)
+    if d.seller_reviews is None and re.search(r"нет отзывов", seller_text, re.I):
+        d.seller_reviews = 0
+    m = re.search(r"(?:На Авито|На сайте) с ([^·\n]{3,20}?\d{4})", seller_text)
+    d.seller_since = m.group(1).strip() if m else ""
+    return d
+
+
 def _with_page(url: str, page: int) -> str:
     parts = urlparse(url)
     query = dict(parse_qsl(parts.query))
@@ -116,9 +171,13 @@ class AvitoClient:
             raise BlockedError(f"HTTP {resp.status_code} на {url}")
         resp.raise_for_status()
         text = resp.text
-        if "firewall" in text[:5000].lower() and 'data-marker="item"' not in text:
+        if "firewall" in text[:5000].lower() and 'data-marker="item' not in text:
             raise BlockedError(f"Капча/фаервол на {url}")
         return text
+
+    def details(self, url: str) -> Details:
+        time.sleep(random.uniform(*self.delay))
+        return parse_item_page(self.fetch(url))
 
     def search(self, url: str, pages: int = 1) -> list[Item]:
         result: dict[str, Item] = {}
