@@ -11,10 +11,10 @@ from typing import Callable
 from urllib.parse import urlencode
 
 CITIES = {
+    "rossiya": "Вся Россия",
     "moskva": "Москва",
     "moskva_i_mo": "Москва и область",
     "sankt-peterburg": "Санкт-Петербург",
-    "rossiya": "Вся Россия",
     "ekaterinburg": "Екатеринбург",
     "novosibirsk": "Новосибирск",
     "kazan": "Казань",
@@ -153,8 +153,14 @@ class Category:
     enabled: bool = True
     exclude: tuple[str, ...] = field(default_factory=tuple)
 
-    def urls(self, city: str) -> list[str]:
-        return [f"https://www.avito.ru/{city}?{urlencode({'q': q, 's': '104'})}" for q in self.queries]
+    def urls(self, city: str, delivery: bool = False) -> list[str]:
+        out = []
+        for q in self.queries:
+            params = {"q": q, "s": "104"}
+            if delivery:
+                params["d"] = "1"  # только с Авито Доставкой
+            out.append(f"https://www.avito.ru/{city}?{urlencode(params)}")
+        return out
 
 
 CATEGORIES: dict[str, Category] = {c.id: c for c in [

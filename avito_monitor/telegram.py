@@ -15,6 +15,7 @@ log = logging.getLogger(__name__)
 class Telegram:
     def __init__(self, token: str, chat_ids: list[str | int], proxy: str | None = None):
         self.api = f"https://api.telegram.org/bot{token}"
+        self.token = token
         self.chat_ids = chat_ids
         self.proxies = {"http": proxy, "https": proxy} if proxy else None
 
@@ -32,7 +33,10 @@ class Telegram:
                     return None
                 return data["result"]
             except (requests.RequestException, ValueError) as e:
-                log.warning("Telegram: ошибка %s (%s), попытка %d", method, e, attempt + 1)
+                err = str(e).replace(self.token, "***")
+                if "SSL" in err or "EOF" in err or "ConnectTimeout" in err or "Connection" in err:
+                    err = "нет связи с Telegram (заблокирован провайдером или пропал интернет)"
+                log.warning("Telegram: %s — %s, попытка %d", method, err, attempt + 1)
                 time.sleep(3)
         return None
 

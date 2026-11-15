@@ -21,7 +21,8 @@ log = logging.getLogger("avito_monitor")
 
 # Всё, что меняется кнопками в Telegram. Значения по умолчанию.
 SETTINGS = {
-    "city": "moskva",
+    "city": "rossiya",        # вся Россия
+    "delivery": True,         # только объявления с Авито Доставкой (важно, когда ищем по всей России)
     "discount": 20,           # % ниже рынка модели
     "grade": "excellent",     # excellent — новое/как новое/отличное; good — без дефектов; any — любое
     "min_rating": 4.5,        # рейтинг продавца (None — не проверять)
@@ -101,7 +102,7 @@ def process_category(client: AvitoClient, db: Storage, tg: Telegram, cat: Catego
     city = st["city"]
     key = f"{cat.id}:{city}"
     found: dict[str, tuple[Item, Model]] = {}
-    for url in cat.urls(city):
+    for url in cat.urls(city, st["delivery"]):
         for it in client.search(url, TECH["pages"]):
             if it.price and it.price >= cat.min_price:
                 m = classify(cat, it.title)
@@ -183,7 +184,12 @@ def monitor(client: AvitoClient, db: Storage, tg: Telegram, st: Settings, wake: 
             return
         if blocked:
             backoff = min(backoff * 2 or 300, 3600)
-            if backoff >= 1200:
+            if backoff == 300 and not db.get("block_warned"):
+                db.set("block_warned", True)
+                tg.send("⚠️ Авито не пускает (ошибка 439). Почти всегда причина — VPN: Авито режет зарубежные IP.\n"
+                        "Выключите VPN для Termux или включите в VPN-приложении обход российских сайтов. "
+                        f"Повторю через {backoff // 60} мин.")
+            elif backoff >= 1200:
                 tg.send(f"⚠️ Авито блокирует запросы, пауза {backoff // 60} мин. "
                         "Выключите VPN или переключитесь на мобильный интернет.")
             status["until"] = time.time() + backoff
@@ -191,6 +197,7 @@ def monitor(client: AvitoClient, db: Storage, tg: Telegram, st: Settings, wake: 
             wake.wait(backoff)
         else:
             backoff = 0
+            db.set("block_warned", False)
             db.set("status", status)
             wake.wait(st["interval"] * random.uniform(0.8, 1.2))
         wake.clear()

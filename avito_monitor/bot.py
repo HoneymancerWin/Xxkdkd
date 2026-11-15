@@ -24,6 +24,7 @@ CYCLES = {
     "min_reviews": [0, 1, 3, 10],
     "min_battery": [None, 80, 85, 90, 95, 100],
     "interval": [120, 180, 300, 600],
+    "delivery": [True, False],
 }
 GRADE_LABEL = {"excellent": "новое / отличное", "good": "без дефектов", "any": "любое"}
 
@@ -228,6 +229,8 @@ class Bot:
         r, b = st["min_rating"], st["min_battery"]
         kb = [
             [{"text": f"📍 Город: {CITIES.get(st['city'], st['city'])}", "callback_data": "city"}],
+            [{"text": f"🚚 {'Только с Авито Доставкой' if st['delivery'] else 'С доставкой и без'}",
+              "callback_data": "cyc:delivery"}],
             [{"text": f"💸 Дешевле рынка на: {st['discount']}%+", "callback_data": "cyc:discount"}],
             [{"text": f"📦 Состояние: {GRADE_LABEL[st['grade']]}", "callback_data": "cyc:grade"}],
             [{"text": f"⭐ Рейтинг продавца: {'от ' + str(r) if r else 'любой'}", "callback_data": "cyc:min_rating"}],
