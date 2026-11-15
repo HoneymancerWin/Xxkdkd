@@ -30,7 +30,7 @@ if [ ! -f config.yaml ]; then
 fi
 
 echo "==> Команда avito для управления"
-$SUDO tee /usr/local/bin/avito >/dev/null <<'EOF'
+$SUDO tee /usr/local/bin/avito.new >/dev/null <<'EOF'
 #!/usr/bin/env bash
 DIR=/opt/avito
 SUDO=""; [ "$(id -u)" -ne 0 ] && SUDO="sudo"
@@ -45,11 +45,12 @@ case "$1" in
   test)    cd $DIR && .venv/bin/python -m avito_monitor --test-telegram ;;
   proxy)   cd $DIR && .venv/bin/python -m avito_monitor.proxy_cmd avito "${2:-check}" && [ -n "$2" ] && [ "$2" != check ] && $SUDO systemctl restart avito ;;
   tgproxy) cd $DIR && .venv/bin/python -m avito_monitor.proxy_cmd telegram "${2:-check}" && [ -n "$2" ] && [ "$2" != check ] && $SUDO systemctl restart avito ;;
-  update)  bash $DIR/server.sh ;;
+  update)  exec bash $DIR/server.sh ;;
   *) echo "avito logs | status | restart | stop | start | setup | edit | test | update | proxy <прокси|off> | tgproxy <прокси|off>" ;;
 esac
 EOF
-$SUDO chmod +x /usr/local/bin/avito
+$SUDO chmod +x /usr/local/bin/avito.new
+$SUDO mv -f /usr/local/bin/avito.new /usr/local/bin/avito
 
 echo "==> Служба"
 $SUDO tee /etc/systemd/system/avito.service >/dev/null <<EOF

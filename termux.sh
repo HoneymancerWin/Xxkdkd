@@ -33,7 +33,8 @@ done
 EOF
 chmod +x "$DIR/run_loop.sh"
 
-cat > "$PREFIX/bin/avito" <<EOF
+# Пишем во временный файл и подменяем целиком: запущенная сейчас команда avito не сломается.
+cat > "$PREFIX/bin/avito.new" <<EOF
 #!$PREFIX/bin/bash
 DIR="$DIR"
 cd "\$DIR"
@@ -60,11 +61,12 @@ case "\$1" in
   edit)    nano config.yaml && "\$0" restart ;;
   setup)   python -m avito_monitor --setup && "\$0" restart ;;
   test)    python -m avito_monitor --test-telegram ;;
-  update)  git pull -q && bash termux.sh ;;
+  update)  git pull -q && exec bash termux.sh ;;
   *) echo "avito start | stop | restart | status | logs | setup | test | update | proxy <прокси|off> | tgproxy <прокси|off> | theme [mocha|dracula|nord|tokyo|default]" ;;
 esac
 EOF
-chmod +x "$PREFIX/bin/avito"
+chmod +x "$PREFIX/bin/avito.new"
+mv -f "$PREFIX/bin/avito.new" "$PREFIX/bin/avito"
 
 # Автозапуск после перезагрузки телефона (нужно приложение Termux:Boot).
 mkdir -p "$HOME/.termux/boot"
