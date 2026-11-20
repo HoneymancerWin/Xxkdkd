@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    KimderheimOS: регистрирует семейство шрифтов "inter" в системе.
+    Шрифт Inter (https://rsms.me/inter/) распространяется по лицензии SIL OFL 1.1.
+    Файлы скачиваются скриптом scripts/fetch-fonts.sh.
+-->
+<fonts-modification version="1">
+    <family customizationType="new-named-family" name="inter">
+        <font weight="400" style="normal">Inter-Regular.ttf</font>
+        <font weight="500" style="normal">Inter-Medium.ttf</font>
+        <font weight="600" style="normal">Inter-SemiBold.ttf</font>
+        <font weight="700" style="normal">Inter-Bold.ttf</font>
+    </family>
+</fonts-modification>

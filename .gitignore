@@ -1,0 +1,16 @@
+# Ключи подписи НИКОГДА не должны попадать в git
+keys/
+*.pem
+*.pk8
+*.x509.pem
+id_ed25519*
+
+# Локальные настройки
+config.env
+
+# Скачиваемые шрифты и сгенерированный для них Android.bp
+vendor/kimderheim/fonts/*.ttf
+vendor/kimderheim/fonts/Android.bp
+vendor/kimderheim/fonts/OFL.txt
+
+__pycache__/

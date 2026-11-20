@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KimderheimOS: крупные скругления в стиле iOS -->
+<resources>
+    <!-- Диалоговые окна -->
+    <dimen name="config_dialogCornerRadius">28dp</dimen>
+    <!-- Кнопки (капсулы) -->
+    <dimen name="config_buttonCornerRadius">24dp</dimen>
+    <!-- Индикаторы прогресса -->
+    <dimen name="config_progressBarCornerRadius">1000dp</dimen>
+</resources>

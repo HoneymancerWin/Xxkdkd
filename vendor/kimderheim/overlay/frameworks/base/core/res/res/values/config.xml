@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    KimderheimOS: системные настройки в стиле iOS.
+    Это оверлей поверх frameworks/base/core/res — значения подменяются при сборке.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+
+    <!-- Форма иконок приложений: скруглённый квадрат с плавными углами
+         (вместо круга). Контур в системе координат 100x100. -->
+    <string name="config_icon_mask" translatable="false">"M50,0 L78,0 C93,0 100,7 100,22 L100,78 C100,93 93,100 78,100 L22,100 C7,100 0,93 0,78 L0,22 C0,7 7,0 22,0 Z"</string>
+
+    <!-- Навигация жестами по умолчанию (свайп снизу = домой). 2 = gestural -->
+    <integer name="config_navBarInteractionMode">2</integer>
+
+    <!-- Системный шрифт для заголовков и текста интерфейса.
+         Семейство "inter" регистрируется в /product/etc/fonts_customization.xml.
+         Если шрифт не установлен, Android просто использует стандартный. -->
+    <string name="config_headlineFontFamily" translatable="false">inter</string>
+    <string name="config_headlineFontFamilyMedium" translatable="false">inter</string>
+    <string name="config_bodyFontFamily" translatable="false">inter</string>
+    <string name="config_bodyFontFamilyMedium" translatable="false">inter</string>
+
+</resources>
