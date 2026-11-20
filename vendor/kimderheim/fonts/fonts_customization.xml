@@ -1,14 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    KimderheimOS: регистрирует семейство шрифтов "inter" в системе.
+    KimderheimOS: регистрирует шрифты Inter в системе.
     Шрифт Inter (https://rsms.me/inter/) распространяется по лицензии SIL OFL 1.1.
     Файлы скачиваются скриптом scripts/fetch-fonts.sh.
 -->
 <fonts-modification version="1">
+    <!-- Основной шрифт интерфейса -->
     <family customizationType="new-named-family" name="inter">
         <font weight="400" style="normal">Inter-Regular.ttf</font>
         <font weight="500" style="normal">Inter-Medium.ttf</font>
         <font weight="600" style="normal">Inter-SemiBold.ttf</font>
         <font weight="700" style="normal">Inter-Bold.ttf</font>
+    </family>
+    <family customizationType="new-named-family" name="inter-medium">
+        <font weight="500" style="normal">Inter-Medium.ttf</font>
+    </family>
+    <!-- Часы экрана блокировки. SystemUI запрашивает семейство с этим именем
+         (DefaultClockProvider) и анимирует ось толщины wght. В GrapheneOS такого
+         шрифта нет, поэтому подставляем переменный Inter. -->
+    <family customizationType="new-named-family" name="google-sans-flex-clock">
+        <font weight="400" style="normal">InterVariable.ttf
+            <axis tag="wght" stylevalue="400" />
+        </font>
     </family>
 </fonts-modification>

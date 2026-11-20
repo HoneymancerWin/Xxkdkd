@@ -6,7 +6,7 @@ INTER_VERSION="${INTER_VERSION:-4.0}"
 FONT_DIR="$REPO_ROOT/vendor/kimderheim/fonts"
 WEIGHTS=(Regular Medium SemiBold Bold)
 
-if [[ -f "$FONT_DIR/Android.bp" && -f "$FONT_DIR/Inter-Regular.ttf" ]]; then
+if [[ -f "$FONT_DIR/Android.bp" && -f "$FONT_DIR/InterVariable.ttf" ]]; then
     echo "Шрифт Inter уже скачан."
     exit 0
 fi
@@ -23,6 +23,8 @@ for w in "${WEIGHTS[@]}"; do
     [[ -n "$f" ]] || die "В архиве нет Inter-$w.ttf"
     cp "$f" "$FONT_DIR/Inter-$w.ttf"
 done
+# Переменный шрифт — для часов экрана блокировки (анимация толщины)
+cp "$(find "$TMP/inter" -name 'InterVariable.ttf' | head -n1)" "$FONT_DIR/InterVariable.ttf"
 cp "$(find "$TMP/inter" -iname 'LICENSE*' | head -n1)" "$FONT_DIR/OFL.txt"
 
 {
@@ -34,12 +36,12 @@ cp "$(find "$TMP/inter" -iname 'LICENSE*' | head -n1)" "$FONT_DIR/OFL.txt"
     echo '    filename: "fonts_customization.xml",'
     echo '    product_specific: true,'
     echo '}'
-    for w in "${WEIGHTS[@]}"; do
+    for f in "${WEIGHTS[@]/#/Inter-}" InterVariable; do
         echo
         echo 'prebuilt_font {'
-        echo "    name: \"kimderheim_Inter-$w.ttf\","
-        echo "    src: \"Inter-$w.ttf\","
-        echo "    filename: \"Inter-$w.ttf\","
+        echo "    name: \"kimderheim_$f.ttf\","
+        echo "    src: \"$f.ttf\","
+        echo "    filename: \"$f.ttf\","
         echo '    product_specific: true,'
         echo '}'
     done

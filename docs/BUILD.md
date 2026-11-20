@@ -68,7 +68,8 @@ SKIP_ADEVTOOL=1 ./scripts/build.sh
 ## 6. Обновление на новую версию GrapheneOS
 
 1. Поменяй `GOS_TAG` в `config.env`.
-2. `./scripts/sync.sh`. Строка подключения в makefile сбросится, `build.sh` добавит её снова.
+2. `./scripts/sync.sh`. Скрипт сам откатит наши правки в исходниках GrapheneOS
+   (строку подключения и патчи), а `build.sh` применит их заново.
 3. `./scripts/build.sh && ./scripts/release.sh`
 
 ## Если что-то пошло не так

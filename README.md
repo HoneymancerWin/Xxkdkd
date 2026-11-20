@@ -14,6 +14,9 @@
 | Системный шрифт Inter (свободный аналог SF Pro) | `vendor/kimderheim/fonts/` |
 | Обои по умолчанию (мягкий градиент) | `.../drawable-nodpi/default_wallpaper.png` |
 | Загрузочная анимация (белый логотип на чёрном) | `vendor/kimderheim/media/bootanimation.zip` |
+| **Рабочий стол в стиле iOS** (страницы, док, поиск, редактирование) | `vendor/kimderheim/apps/KimderheimLauncher/` |
+| Экран блокировки: фонарик и камера в углах, часы шрифтом Inter | `vendor/kimderheim/overlay/.../SystemUI/`, `fonts/` |
+| Экспериментальный патч «большие часы всегда» | `patches/frameworks/base/` |
 | Скрипты: зависимости, загрузка, сборка, ключи, релиз | `scripts/` |
 
 ## Быстрый старт
@@ -44,6 +47,8 @@ vendor/kimderheim/
   overlay/                изменения системных ресурсов (дизайн)
   fonts/                  шрифт Inter
   media/                  загрузочная анимация
+  apps/KimderheimLauncher/ рабочий стол в стиле iOS
+patches/                  экспериментальные правки кода GrapheneOS
 docs/                     инструкции
 ```
 

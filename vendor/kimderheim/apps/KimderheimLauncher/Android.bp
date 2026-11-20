@@ -1,0 +1,12 @@
+// Рабочий стол KimderheimOS в стиле iOS.
+android_app {
+    name: "KimderheimLauncher",
+    srcs: ["src/**/*.java"],
+    sdk_version: "current",
+    product_specific: true,
+    // privileged: приоритет intent-filter учитывается только у привилегированных
+    // системных приложений — так лаунчер становится рабочим столом по умолчанию.
+    privileged: true,
+    // Стандартный Launcher3 НЕ заменяем: он нужен системе для экрана
+    // недавних приложений и анимаций жестов.
+}

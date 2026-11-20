@@ -5,6 +5,7 @@ source "$(dirname "$0")/common.sh"
 [[ -n "$GOS_TAG" ]] || die "Не задано GOS_TAG (тег релиза GrapheneOS). Заполни config.env"
 
 mkdir -p "$SRC_DIR"
+revert_mods
 cd "$SRC_DIR"
 
 say "repo init: GrapheneOS $GOS_TAG"

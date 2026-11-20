@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KimderheimOS: экран блокировки в стиле iOS -->
+<resources>
+    <!-- Кнопки в нижних углах экрана блокировки: слева фонарик, справа камера.
+         Пользователь может поменять их в настройках экрана блокировки. -->
+    <string-array name="config_keyguardQuickAffordanceDefaults" translatable="false">
+        <item>bottom_start:flashlight</item>
+        <item>bottom_end:camera</item>
+    </string-array>
+</resources>

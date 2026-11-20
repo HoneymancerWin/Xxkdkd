@@ -28,5 +28,10 @@ PRODUCT_PACKAGES += \
     kimderheim_Inter-Regular.ttf \
     kimderheim_Inter-Medium.ttf \
     kimderheim_Inter-SemiBold.ttf \
-    kimderheim_Inter-Bold.ttf
+    kimderheim_Inter-Bold.ttf \
+    kimderheim_InterVariable.ttf
 endif
+
+# --- Рабочий стол в стиле iOS ---
+PRODUCT_PACKAGES += \
+    KimderheimLauncher

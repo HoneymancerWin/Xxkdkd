@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Рабочий стол KimderheimOS в стиле iOS -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="os.kimderheim.launcher">
+
+    <!-- Видеть все установленные приложения -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+    <!-- Открывать диалог удаления приложения -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+
+    <application
+        android:label="Kimderheim"
+        android:icon="@android:drawable/sym_def_app_icon"
+        android:allowBackup="false"
+        android:supportsRtl="true"
+        android:enableOnBackInvokedCallback="true">
+
+        <activity
+            android:name=".LauncherActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:clearTaskOnLaunch="true"
+            android:stateNotNeeded="true"
+            android:resumeWhilePausing="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustNothing"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize"
+            android:theme="@android:style/Theme.DeviceDefault.Wallpaper.NoTitleBar">
+            <!-- priority="1": системный рабочий стол по умолчанию вместо стандартного.
+                 Стандартный остаётся доступен в Настройки → Приложения по умолчанию. -->
+            <intent-filter android:priority="1">
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.LAUNCHER_APP" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

@@ -18,6 +18,12 @@ say "Копирую vendor/kimderheim в дерево исходников"
 mkdir -p "$SRC_DIR/vendor"
 rsync -a --delete "$REPO_ROOT/vendor/kimderheim/" "$SRC_DIR/vendor/kimderheim/"
 
+# 2а. Экспериментальные патчи (включаются в config.env)
+if [[ "${KIMDERHEIM_ALWAYS_LARGE_CLOCK:-0}" == "1" ]]; then
+    say "Патч: большие часы на экране блокировки всегда"
+    apply_patch frameworks/base patches/frameworks/base/0001-keyguard-always-large-clock.patch
+fi
+
 android_env
 
 # 3. Извлечение закрытых файлов производителя (adevtool)
@@ -41,6 +47,7 @@ if ! grep -qF "$HOOK" "$PRODUCT_MK"; then
     say "Подключаю kimderheim.mk к $PRODUCT_MK"
     printf '\n# KimderheimOS\n%s\n' "$HOOK" >> "$PRODUCT_MK"
 fi
+record_mod file "$PRODUCT_MK"
 do_lunch "$TARGET"
 
 # 5. Сборка

@@ -1,0 +1,45 @@
+From 01b808619143a67509400c7c19e4252839c7ebd9 Mon Sep 17 00:00:00 2001
+From: KimderheimOS <noreply@kimderheim.invalid>
+Date: Fri, 20 Nov 2026 17:11:31 +0000
+Subject: [PATCH] KimderheimOS: always show large lockscreen clock
+
+Experimental. Keeps the large clock even when notifications or media
+are visible, like the iOS lock screen.
+---
+ .../keyguard/data/repository/KeyguardClockRepository.kt       | 3 ++-
+ .../keyguard/domain/interactor/KeyguardClockInteractor.kt     | 4 ++--
+ 2 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/packages/SystemUI/src/com/android/systemui/keyguard/data/repository/KeyguardClockRepository.kt b/packages/SystemUI/src/com/android/systemui/keyguard/data/repository/KeyguardClockRepository.kt
+index afeb7f45..43eb20f3 100644
+--- a/packages/SystemUI/src/com/android/systemui/keyguard/data/repository/KeyguardClockRepository.kt
++++ b/packages/SystemUI/src/com/android/systemui/keyguard/data/repository/KeyguardClockRepository.kt
+@@ -110,7 +110,8 @@ constructor(
+ 
+     override fun setClockSize(size: ClockSize) {
+         SceneContainerFlag.assertInLegacyMode()
+-        _clockSize.value = size
++        // KimderheimOS: large clock is always shown on the lockscreen (iOS style)
++        _clockSize.value = ClockSize.LARGE
+     }
+ 
+     override val selectedClockSize: StateFlow<ClockSizeSetting> =
+diff --git a/packages/SystemUI/src/com/android/systemui/keyguard/domain/interactor/KeyguardClockInteractor.kt b/packages/SystemUI/src/com/android/systemui/keyguard/domain/interactor/KeyguardClockInteractor.kt
+index 689b330a..ad7e10f1 100644
+--- a/packages/SystemUI/src/com/android/systemui/keyguard/domain/interactor/KeyguardClockInteractor.kt
++++ b/packages/SystemUI/src/com/android/systemui/keyguard/domain/interactor/KeyguardClockInteractor.kt
+@@ -113,9 +113,9 @@ constructor(
+             ) { forcedClockSize, isFullWidthShade, hasNotifs, hasMedia, isDozing ->
+                 when {
+                     forcedClockSize != null -> forcedClockSize
+-                    isFullWidthShade && (hasNotifs || hasMedia) -> ClockSize.SMALL
++                    isFullWidthShade && (hasNotifs || hasMedia) -> ClockSize.LARGE // KimderheimOS
+                     isFullWidthShade -> ClockSize.LARGE
+-                    hasMedia && !isDozing -> ClockSize.SMALL
++                    hasMedia && !isDozing -> ClockSize.LARGE // KimderheimOS
+                     else -> ClockSize.LARGE
+                 }
+             }
+-- 
+2.43.0
+
